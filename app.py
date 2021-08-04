@@ -1,8 +1,9 @@
 import hmac
 import sqlite3
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
 from flask_jwt import JWT, jwt_required, current_identity
 from flask_cors import CORS
+from flask_mail import Mail, Message
 
 
 class User(object):
@@ -22,20 +23,34 @@ class Product(object):
         self.product_image = product_image
 
 
-
-class Database:
+class Database(object):
     def __init__(self):
         self.conn = sqlite3.connect('posbe.db')
         self.cursor = self.conn.cursor()
 
-    def execute(self, query, value):
+    def addpro(self, value):
+        query = "INSERT INTO products (product_id, product_name, product_type, product_quantity, product_price," \
+                "product_image) VALUES (?, ?, ?, ?, ?, ?)"
         self.cursor.execute(query, value)
-        self.conn.commit()
-        return self.cursor
 
-    def getprice(self, value):
-        self.cursor.execute(value)
-        return self.cursor
+    def delpro(self, value):
+        query = "DELETE FROM products WHERE product_id='" + value + "'"
+        self.cursor.execute(query, value)
+
+    def editpro(self, value):
+        query = "UPDATE products SET product_id=?, product_name=?, product_type=?, product_quantity=?, product_price=?," \
+                "product_image=?"
+        self.cursor.execute(query, value)
+
+    def viewcat(self):
+        self.cursor.execute("SELECT * FROM products")
+        return self.cursor.fetchall()
+
+    def commit(self):
+        self.conn.commit()
+
+
+db = Database()
 
 
 def fetch_users():
@@ -51,7 +66,21 @@ def fetch_users():
     return new_data
 
 
+def fetch_products():
+    with sqlite3.connect('posbe.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM products")
+        allproducts = cursor.fetchall()
+
+        new_data = []
+
+        for data in allproducts:
+            new_data.append(Product(data[0], data[1], data[2], data[3], data[4], data[5]))
+    return new_data
+
+
 users = fetch_users()
+products = fetch_products()
 
 
 def createusertable():
@@ -72,8 +101,10 @@ def createproducttable():
     with sqlite3.connect('posbe.db') as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS products (product_id TEXT PRIMARY KEY,"
                      "product_name TEXT NOT NULL,"
+                     "product_type TEXT NOT NULL,"
                      "product_quantity INTEGER NOT NULL,"
-                     "product_price TEXT NOT NULL)")
+                     "product_price TEXT NOT NULL,"
+                     "product_image TEXT NOT NULL)")
     print("product table created successfully.")
 
 
@@ -85,6 +116,7 @@ def createshoppingcart():
                      "quantity INTEGER NOT NULL,"
                      "tprice TEXT NOT NULL,"
                      "email TEXT NOT NULL,"
+                     "image TEXT NOT NULL,"
                      "FOREIGN KEY (product_id)"
                      "REFERENCES products(product_id),"
                      "FOREIGN KEY (product_name)"
@@ -100,8 +132,6 @@ createshoppingcart()
 
 username_table = {u.username: u for u in users}
 useremail_table = {u.id: u for u in users}
-
-print(username_table)
 
 
 def authenticate(username, password):
@@ -119,6 +149,13 @@ app = Flask(__name__)
 CORS(app)
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'lottoemail123@gmail.com'
+app.config['MAIL_PASSWORD'] = 'MonkeyVillage123'
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+
 
 jwt = JWT(app, authenticate, identity)
 
@@ -155,10 +192,22 @@ def user_registration():
                            "username,"
                            "password) VALUES(?, ?, ?, ?, ?, ?)", (email, first_name, last_name, address, username, password))
             conn.commit()
-            response["message"] = "success"
+
+            response["message"] = "success. message sent"
             response["status_code"] = 201
 
-        return response
+        return redirect("/emailsent/%s" % email)
+
+
+@app.route('/emailsent/<email>', methods=['GET'])
+def sendemail(email):
+    mail = Mail(app)
+
+    msg = Message('Hello Message', sender='lottoemail123@gmail.com', recipients=[email])
+    msg.body = "This is the email body after making some changes"
+    mail.send(msg)
+
+    return "sent"
 
 
 @app.route('/viewprofile/<username>/', methods=["GET"])
@@ -175,36 +224,35 @@ def viewownprofile(username):
 
 
 @app.route('/addtocatalogue/', methods=["POST"])
-@jwt_required()
+@jwt_required
 def newproduct():
+    dbb = Database()
     response = {}
 
     if request.method == "POST":
         product_id = request.form['product_id']
         product_name = request.form['product_name']
+        product_type = request.form['product_type']
         product_quantity = request.form['product_quantity']
         product_price = request.form['product_price']
+        product_image = request.form['product_image']
 
-        query = "INSERT INTO products(product_id, product_name, product_quantity,product_price) VALUES(?, ?, ?, ?)"
-        values = (product_id, product_name, product_quantity, product_price)
-        Database().execute(query, values)
+        values = (product_id, product_name, product_type, product_quantity, product_price, product_image)
+
+        dbb.addpro(values)
 
         response["status_code"] = 201
-        response['description'] = "product added successfully"
+        response['description'] = 'product added'
         return response
 
 
 @app.route('/viewcatalogue/', methods=["GET"])
 def get_products():
+    dtb = Database()
     response = {}
-    with sqlite3.connect("posbe.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM products WHERE product_quantity>0")
-
-        posts = cursor.fetchall()
-
+    items = dtb.viewcat()
     response['status_code'] = 200
-    response['data'] = posts
+    response['data'] = items
     return response
 
 
@@ -212,12 +260,10 @@ def get_products():
 @jwt_required()
 def delete_product(productid):
     response = {}
-    with sqlite3.connect("posbe.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM products WHERE product_id='" + str(productid) + "'")
-        conn.commit()
-        response['status_code'] = 200
-        response['message'] = "product deleted successfully."
+    dtb = Database()
+    dtb.delpro(productid)
+    response['status_code'] = 200
+    response['message'] = "product deleted successfully."
     return response
 
 
@@ -225,56 +271,55 @@ def delete_product(productid):
 @jwt_required()
 def edit_product(productid):
     response = {}
+    dtb = Database()
     if request.method == "PUT":
-        with sqlite3.connect("posbe.db") as conn:
-            product_id = request.form['product_id']
-            product_name = request.form['product_name']
-            product_quantity = request.form['product_quantity']
-            product_price = request.form['product_price']
-
-            query = "UPDATE products SET product_id=?, product_name=?, product_quantity=?,product_price=?" \
-                    " WHERE product_id='" + productid + "'"
-            values = (product_id, product_name, product_quantity, product_price)
-            Database().execute(query, values)
-            response['message'] = 200
-        return response
-
-
-@app.route("/addtocart/", methods=["POST"])
-@jwt_required()
-def addtocart():
-    usernameget = list(username_table.keys())
-    getindex = list(username_table.values())
-    currently = getindex.index(current_identity)
-    currentuser = usernameget[currently]
-
-    response = {}
-    if request.method == "POST":
         product_id = request.form['product_id']
         product_name = request.form['product_name']
-        quantity = request.form['quantity']
-        pprice1 = "SELECT product_price FROM products WHERE product_id='" + product_id + "'"
-        tprice = float(Database().getprice(pprice1).fetchone()[0]) * int(quantity)
-
-        query = "INSERT INTO shoppingcart(product_id, product_name, quantity, tprice, email) VALUES(?, ?, ?, ?, ?)"
-        values = (product_id, product_name, quantity, tprice, currentuser)
-        Database().execute(query, values)
-
-        response["status_code"] = 201
-        response['description'] = "Cart updated"
-        return response
-
-
-@app.route('/viewcart/', methods=["GET"])
-def get_cart():
-    response = {}
-    with sqlite3.connect("posbe.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM shoppingcart")
-        posts = cursor.fetchall()
-
-    response['status_code'] = 200
-    response['data'] = posts
+        product_quantity = request.form['product_quantity']
+        product_price = request.form['product_price']
+        values = (product_id, product_name, product_quantity, product_price)
+        dtb.editpro(values)
+        response['message'] = 200
     return response
 
-# i see you :)
+
+# @app.route("/addtocart/", methods=["POST"])
+# @jwt_required()
+# def addtocart():
+#     # usernameget = list(username_table.keys())
+#     # getindex = list(username_table.values())
+#     # currently = getindex.index(current_identity)
+#     # currentuser = usernameget[currently]
+#
+#     response = {}
+#     if request.method == "POST":
+#         product_id = request.form['product_id']
+#         product_name = request.form['product_name']
+#         quantity = request.form['quantity']
+#         pprice1 = "SELECT product_price FROM products WHERE product_id='" + product_id + "'"
+#         tprice = float(Database().getprice(pprice1).fetchone()[0]) * int(quantity)
+#
+#         query = "INSERT INTO shoppingcart(product_id, product_name, quantity, tprice, email) VALUES(?, ?, ?, ?, ?)"
+#         values = (product_id, product_name, quantity, tprice, currentuser)
+#         Database().execute(query, values)
+#
+#         response["status_code"] = 201
+#         response['description'] = "Cart updated"
+#         return response
+
+
+# @app.route('/viewcart/', methods=["GET"])
+# def get_cart():
+#     response = {}
+#     with sqlite3.connect("posbe.db") as conn:
+#         cursor = conn.cursor()
+#         cursor.execute("SELECT * FROM shoppingcart")
+#         posts = cursor.fetchall()
+#
+#     response['status_code'] = 200
+#     response['data'] = posts
+#     return response
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
