@@ -4,6 +4,10 @@ from flask import Flask, request, jsonify, redirect
 from flask_jwt import JWT, jwt_required, current_identity
 from flask_cors import CORS
 from flask_mail import Mail, Message
+import re
+
+
+
 
 
 class User(object):
@@ -37,10 +41,15 @@ class Database(object):
         query = "DELETE FROM products WHERE product_id='" + value + "'"
         self.cursor.execute(query, value)
 
-    def editpro(self, value):
+    def editpro(self, pro_id, value):
         query = "UPDATE products SET product_id=?, product_name=?, product_type=?, product_quantity=?, product_price=?," \
-                "product_image=?"
+                "product_image=? WHERE product_id='" + pro_id + "'"
         self.cursor.execute(query, value)
+
+    def selectproduct(self, value):
+        query = "SELECT * FROM products WHERE product_id='" + value + "'"
+        self.cursor.execute(query, value)
+        return self.cursor.fetchall()
 
     def viewcat(self):
         self.cursor.execute("SELECT * FROM products")
@@ -166,12 +175,10 @@ def protected():
     return '%s' % current_identity
 
 
-emailcheck = ''
-
-
 @app.route('/user-registration/', methods=["POST"])
 def user_registration():
     response = {}
+    regex = '^(\w|\.|\_|\-)+[@](\w|\_|\-|\.)+[.]\w{2,3}$'
 
     if request.method == "POST":
 
@@ -181,22 +188,24 @@ def user_registration():
         address = request.form['address']
         username = request.form['username']
         password = request.form['password']
+        if (re.search(regex, email)):
+            with sqlite3.connect("posbe.db") as conn:
+                cursor = conn.cursor()
+                cursor.execute("INSERT INTO user("
+                               "email,"
+                               "first_name,"
+                               "last_name,"
+                               "address,"
+                               "username,"
+                               "password) VALUES(?, ?, ?, ?, ?, ?)", (email, first_name, last_name, address, username, password))
+                conn.commit()
 
-        with sqlite3.connect("posbe.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO user("
-                           "email,"
-                           "first_name,"
-                           "last_name,"
-                           "address,"
-                           "username,"
-                           "password) VALUES(?, ?, ?, ?, ?, ?)", (email, first_name, last_name, address, username, password))
-            conn.commit()
+                response["message"] = "success. message sent"
+                response["status_code"] = 201
 
-            response["message"] = "success. message sent"
-            response["status_code"] = 201
-
-        return redirect("/emailsent/%s" % email)
+            return redirect("/emailsent/%s" % email)
+        else:
+            return "Email not valid. Please enter a valid email address"
 
 
 @app.route('/emailsent/<email>', methods=['GET'])
@@ -218,8 +227,11 @@ def viewownprofile(username):
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM user WHERE username='" + username + "'")
             data = cursor.fetchall()
-            response['message'] = 200
-            response['data'] = data
+            if data == []:
+                return "User does not exit"
+            else:
+                response['message'] = 200
+                response['data'] = data
         return response
 
 
@@ -236,14 +248,21 @@ def newproduct():
         product_quantity = request.form['product_quantity']
         product_price = request.form['product_price']
         product_image = request.form['product_image']
+        if (product_id == '' or product_name == '' or product_type == ''
+                or product_quantity == '' or product_price == '' or product_image == ''):
+            return "Please fill in all entry fields"
+        else:
+            if int(product_quantity):
+                values = (product_id, product_name, product_type, product_quantity, product_price, product_image)
+                dbb.addpro(values)
 
-        values = (product_id, product_name, product_type, product_quantity, product_price, product_image)
-
-        dbb.addpro(values)
-
-        response["status_code"] = 201
-        response['description'] = 'product added'
-        return response
+                response["status_code"] = 201
+                response['description'] = 'product added'
+                return response
+            else:
+                return "Please enter product quantity as an number"
+    else:
+        return "Method Not Allowed"
 
 
 @app.route('/viewcatalogue/', methods=["GET"])
@@ -261,9 +280,13 @@ def get_products():
 def delete_product(productid):
     response = {}
     dtb = Database()
-    dtb.delpro(productid)
-    response['status_code'] = 200
-    response['message'] = "product deleted successfully."
+    product = dtb.selectproduct(productid)
+    if product == []:
+        return "product does not exist"
+    else:
+        dtb.delpro(productid)
+        response['status_code'] = 200
+        response['message'] = "product deleted successfully."
     return response
 
 
@@ -272,15 +295,21 @@ def delete_product(productid):
 def edit_product(productid):
     response = {}
     dtb = Database()
-    if request.method == "PUT":
-        product_id = request.form['product_id']
-        product_name = request.form['product_name']
-        product_quantity = request.form['product_quantity']
-        product_price = request.form['product_price']
-        values = (product_id, product_name, product_quantity, product_price)
-        dtb.editpro(values)
-        response['message'] = 200
-    return response
+    product = dtb.selectproduct(productid)
+    if product == []:
+        return "Product does not exist in the database"
+    else:
+        if request.method == "PUT":
+            product_id = request.form['product_id']
+            product_name = request.form['product_name']
+            product_quantity = request.form['product_quantity']
+            product_price = request.form['product_price']
+            values = (product_id, product_name, product_quantity, product_price)
+            dtb.editpro(productid, values)
+            response['message'] = 200
+            return response
+        else:
+            return "Method not allowed"
 
 
 # @app.route("/addtocart/", methods=["POST"])
