@@ -1,6 +1,6 @@
 import hmac
 import sqlite3
-from flask import Flask, request, jsonify, redirect
+from flask import Flask, request, redirect
 from flask_jwt import JWT, jwt_required, current_identity
 from flask_cors import CORS
 from flask_mail import Mail, Message
@@ -45,9 +45,10 @@ class Database(object):
         self.cursor.execute(query)
 
     def editpro(self, pro_id, value):
-        query = "UPDATE products SET product_id=?, product_name=?, product_type=?, product_quantity=?, product_price=?," \
-                "product_image=? WHERE product_id='" + pro_id + "'"
-        self.cursor.execute(query, value)
+        proid = pro_id
+        values = value
+        query = "UPDATE products SET product_id=?, product_name=?, product_type=?, product_quantity=?, product_price=?, product_image=? WHERE product_id='" + proid + "'"
+        self.cursor.execute(query, values)
 
     def selectproduct(self, value):
         proid = value
@@ -70,7 +71,7 @@ def upload_file():
     cloudinary.config(cloud_name ='dlqxdivje', api_key='599819111725767',
                       api_secret='lTD-aqaoTbzVgmZqyZxjPThyaVg')
     upload_result = None
-    if request.method == 'POST':
+    if request.method == 'POST' or request.method == 'PUT':
         product_image = request.files['product_image']
         app.logger.info('%s file_to_upload', product_image)
         if product_image:
@@ -253,7 +254,7 @@ def viewownprofile(username):
 @app.route('/addtocatalogue/', methods=["POST"])
 @jwt_required()
 def newproduct():
-    dbb = Database()
+    dtb = Database()
     response = {}
 
     if request.method == "POST":
@@ -268,8 +269,8 @@ def newproduct():
         else:
             if int(product_quantity):
                 values = (product_id, product_name, product_type, product_quantity, product_price, upload_file())
-                dbb.addpro(values)
-                dbb.commit()
+                dtb.addpro(values)
+                dtb.commit()
 
                 response["status_code"] = 201
                 response['description'] = 'product added'
@@ -321,9 +322,10 @@ def edit_product(productid):
         if request.method == "PUT":
             product_id = request.form['product_id']
             product_name = request.form['product_name']
+            product_type = request.form['product_type']
             product_quantity = request.form['product_quantity']
             product_price = request.form['product_price']
-            values = (product_id, product_name, product_quantity, product_price)
+            values = (product_id, product_name, product_type, product_quantity, product_price, upload_file())
             dtb.editpro(productid, values)
             dtb.commit()
             response['message'] = 200
