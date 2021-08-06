@@ -1,5 +1,7 @@
 blinker==1.4
+certifi==2021.5.30
 click==8.0.1
+cloudinary==1.26.0
 colorama==0.4.4
 Flask==2.0.1
 Flask-Cors==3.0.10
@@ -11,4 +13,5 @@ Jinja2==3.0.1
 MarkupSafe==2.0.1
 PyJWT==1.4.2
 six==1.16.0
+urllib3==1.26.6
 Werkzeug==2.0.1

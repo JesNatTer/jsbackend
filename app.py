@@ -5,11 +5,11 @@ from flask_jwt import JWT, jwt_required, current_identity
 from flask_cors import CORS
 from flask_mail import Mail, Message
 import re
+import cloudinary
+import cloudinary.uploader
 
 
-
-
-
+# creating a user object
 class User(object):
     def __init__(self, email, username, password):
         self.id = email
@@ -17,6 +17,7 @@ class User(object):
         self.password = password
 
 
+# creating a product object
 class Product(object):
     def __init__(self, product_id, product_name, product_type, product_quantity, product_price, product_image):
         self.product_id = product_id
@@ -27,6 +28,7 @@ class Product(object):
         self.product_image = product_image
 
 
+# initializing the database
 class Database(object):
     def __init__(self):
         self.conn = sqlite3.connect('posbe.db')
@@ -52,16 +54,33 @@ class Database(object):
         return self.cursor.fetchall()
 
     def viewcat(self):
-        self.cursor.execute("SELECT * FROM products")
-        return self.cursor.fetchall()
+        self.cursor.execute("SELECT * FROM products WHERE product_quantity > 0")
+        data = self.cursor.fetchall()
+        return data
 
     def commit(self):
         self.conn.commit()
 
 
+# function to take image uploads and convert them into urls
+def upload_file():
+    app.logger.info('in upload route')
+    cloudinary.config(cloud_name ='dlqxdivje', api_key='599819111725767',
+                      api_secret='lTD-aqaoTbzVgmZqyZxjPThyaVg')
+    upload_result = None
+    if request.method == 'POST':
+        product_image = request.files['product_image']
+        app.logger.info('%s file_to_upload', product_image)
+        if product_image:
+            upload_result = cloudinary.uploader.upload(product_image)
+            app.logger.info(upload_result)
+            return upload_result['url']
+
+
 db = Database()
 
 
+# collecting all users from the database
 def fetch_users():
     with sqlite3.connect('posbe.db') as conn:
         cursor = conn.cursor()
@@ -75,6 +94,7 @@ def fetch_users():
     return new_data
 
 
+# collecting all products from the database
 def fetch_products():
     with sqlite3.connect('posbe.db') as conn:
         cursor = conn.cursor()
@@ -92,6 +112,7 @@ users = fetch_users()
 products = fetch_products()
 
 
+# function to create the user table in the database
 def createusertable():
     conn = sqlite3.connect('posbe.db')
     print("Opened database successfully")
@@ -106,6 +127,7 @@ def createusertable():
     conn.close()
 
 
+# function to create the products table in the database
 def createproducttable():
     with sqlite3.connect('posbe.db') as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS products (product_id TEXT PRIMARY KEY,"
@@ -117,32 +139,16 @@ def createproducttable():
     print("product table created successfully.")
 
 
-def createshoppingcart():
-    with sqlite3.connect('posbe.db') as conn:
-        conn.execute("CREATE TABLE IF NOT EXISTS shoppingcart (item_no INTEGER PRIMARY KEY AUTOINCREMENT,"
-                     "product_id TEXT NOT NULL,"
-                     "product_name TEXT NOT NULL,"
-                     "quantity INTEGER NOT NULL,"
-                     "tprice TEXT NOT NULL,"
-                     "email TEXT NOT NULL,"
-                     "image TEXT NOT NULL,"
-                     "FOREIGN KEY (product_id)"
-                     "REFERENCES products(product_id),"
-                     "FOREIGN KEY (product_name)"
-                     "REFERENCES products(product_name),"
-                     "FOREIGN KEY (email)"
-                     "REFERENCES user(email))")
-    print("cart table created successfully.")
-
-
+# calling the functions to create the tables
 createusertable()
 createproducttable()
-createshoppingcart()
+
 
 username_table = {u.username: u for u in users}
 useremail_table = {u.id: u for u in users}
 
 
+# function to create the token during login
 def authenticate(username, password):
     user = username_table.get(username, None)
     if user and hmac.compare_digest(user.password.encode('utf-8'), password.encode('utf-8')):
@@ -154,6 +160,7 @@ def identity(payload):
     return useremail_table.get(user_id, None)
 
 
+# initializing the app
 app = Flask(__name__)
 CORS(app)
 app.debug = True
@@ -164,6 +171,8 @@ app.config['MAIL_USERNAME'] = 'lottoemail123@gmail.com'
 app.config['MAIL_PASSWORD'] = 'MonkeyVillage123'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
+app.config['TESTING'] = True
+testthing = app.test_client()
 
 
 jwt = JWT(app, authenticate, identity)
@@ -175,6 +184,7 @@ def protected():
     return '%s' % current_identity
 
 
+# app route for user registration
 @app.route('/user-registration/', methods=["POST"])
 def user_registration():
     response = {}
@@ -208,6 +218,7 @@ def user_registration():
             return "Email not valid. Please enter a valid email address"
 
 
+# app route that sends an email to users who registered
 @app.route('/emailsent/<email>', methods=['GET'])
 def sendemail(email):
     mail = Mail(app)
@@ -216,9 +227,10 @@ def sendemail(email):
     msg.body = "This is the email body after making some changes"
     mail.send(msg)
 
-    return "sent"
+    return "Thank you for registering. An em"
 
 
+# app route to view a profile
 @app.route('/viewprofile/<username>/', methods=["GET"])
 def viewownprofile(username):
     response = {}
@@ -235,8 +247,9 @@ def viewownprofile(username):
         return response
 
 
+# app route to add a product to the database
 @app.route('/addtocatalogue/', methods=["POST"])
-@jwt_required
+@jwt_required()
 def newproduct():
     dbb = Database()
     response = {}
@@ -247,14 +260,14 @@ def newproduct():
         product_type = request.form['product_type']
         product_quantity = request.form['product_quantity']
         product_price = request.form['product_price']
-        product_image = request.form['product_image']
         if (product_id == '' or product_name == '' or product_type == ''
-                or product_quantity == '' or product_price == '' or product_image == ''):
+                or product_quantity == '' or product_price == ''):
             return "Please fill in all entry fields"
         else:
             if int(product_quantity):
-                values = (product_id, product_name, product_type, product_quantity, product_price, product_image)
+                values = (product_id, product_name, product_type, product_quantity, product_price, upload_file())
                 dbb.addpro(values)
+                dbb.commit()
 
                 response["status_code"] = 201
                 response['description'] = 'product added'
@@ -265,16 +278,18 @@ def newproduct():
         return "Method Not Allowed"
 
 
+# app route to view all the products in the database
 @app.route('/viewcatalogue/', methods=["GET"])
 def get_products():
     dtb = Database()
     response = {}
     items = dtb.viewcat()
     response['status_code'] = 200
-    response['data'] = items
+    response['data'] = items[0]
     return response
 
 
+# app route to delete a product from the database
 @app.route("/delete-product/<productid>/")
 @jwt_required()
 def delete_product(productid):
@@ -290,6 +305,7 @@ def delete_product(productid):
     return response
 
 
+# app route to edit a product in the database
 @app.route("/edit-product/<productid>/", methods=["PUT"])
 @jwt_required()
 def edit_product(productid):
@@ -310,44 +326,6 @@ def edit_product(productid):
             return response
         else:
             return "Method not allowed"
-
-
-# @app.route("/addtocart/", methods=["POST"])
-# @jwt_required()
-# def addtocart():
-#     # usernameget = list(username_table.keys())
-#     # getindex = list(username_table.values())
-#     # currently = getindex.index(current_identity)
-#     # currentuser = usernameget[currently]
-#
-#     response = {}
-#     if request.method == "POST":
-#         product_id = request.form['product_id']
-#         product_name = request.form['product_name']
-#         quantity = request.form['quantity']
-#         pprice1 = "SELECT product_price FROM products WHERE product_id='" + product_id + "'"
-#         tprice = float(Database().getprice(pprice1).fetchone()[0]) * int(quantity)
-#
-#         query = "INSERT INTO shoppingcart(product_id, product_name, quantity, tprice, email) VALUES(?, ?, ?, ?, ?)"
-#         values = (product_id, product_name, quantity, tprice, currentuser)
-#         Database().execute(query, values)
-#
-#         response["status_code"] = 201
-#         response['description'] = "Cart updated"
-#         return response
-
-
-# @app.route('/viewcart/', methods=["GET"])
-# def get_cart():
-#     response = {}
-#     with sqlite3.connect("posbe.db") as conn:
-#         cursor = conn.cursor()
-#         cursor.execute("SELECT * FROM shoppingcart")
-#         posts = cursor.fetchall()
-#
-#     response['status_code'] = 200
-#     response['data'] = posts
-#     return response
 
 
 if __name__ == '__main__':
