@@ -40,8 +40,9 @@ class Database(object):
         self.cursor.execute(query, value)
 
     def delpro(self, value):
-        query = "DELETE FROM products WHERE product_id='" + value + "'"
-        self.cursor.execute(query, value)
+        proid = value
+        query = "DELETE FROM products WHERE product_id='" + proid + "'"
+        self.cursor.execute(query)
 
     def editpro(self, pro_id, value):
         query = "UPDATE products SET product_id=?, product_name=?, product_type=?, product_quantity=?, product_price=?," \
@@ -49,8 +50,9 @@ class Database(object):
         self.cursor.execute(query, value)
 
     def selectproduct(self, value):
-        query = "SELECT * FROM products WHERE product_id='" + value + "'"
-        self.cursor.execute(query, value)
+        proid = value
+        query = "SELECT * FROM products WHERE product_id='" + proid + "'"
+        self.cursor.execute(query)
         return self.cursor.fetchall()
 
     def viewcat(self):
@@ -300,6 +302,7 @@ def delete_product(productid):
         return "product does not exist"
     else:
         dtb.delpro(productid)
+        dtb.commit()
         response['status_code'] = 200
         response['message'] = "product deleted successfully."
     return response
@@ -322,6 +325,7 @@ def edit_product(productid):
             product_price = request.form['product_price']
             values = (product_id, product_name, product_quantity, product_price)
             dtb.editpro(productid, values)
+            dtb.commit()
             response['message'] = 200
             return response
         else:
