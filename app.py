@@ -165,7 +165,7 @@ def identity(payload):
 
 # initializing the app
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app)
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -215,6 +215,7 @@ def user_registration():
 
                 response["message"] = "success. message sent"
                 response["status_code"] = 201
+                response.headers.add('Access-Control-Allow-Origin', '*')
 
             return redirect("/emailsent/%s" % email)
         else:
