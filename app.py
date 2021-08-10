@@ -165,7 +165,7 @@ def identity(payload):
 
 # initializing the app
 app = Flask(__name__)
-CORS(app)
+CORS(app, send_wildcard: True)
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
