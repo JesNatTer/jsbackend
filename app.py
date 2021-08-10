@@ -2,7 +2,7 @@ import hmac
 import sqlite3
 from flask import Flask, request, redirect
 from flask_jwt import JWT, jwt_required, current_identity
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_mail import Mail, Message
 import re
 import cloudinary
@@ -189,6 +189,7 @@ def protected():
 
 # app route for user registration
 @app.route('/user-registration/', methods=["POST"])
+@cross_origin()
 def user_registration():
     response = {}
     regex = '^(\w|\.|\_|\-)+[@](\w|\_|\-|\.)+[.]\w{2,3}$'
