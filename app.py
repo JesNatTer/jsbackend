@@ -215,7 +215,6 @@ def user_registration():
 
                 response["message"] = "success. message sent"
                 response["status_code"] = 201
-                response.headers.add('Access-Control-Allow-Origin', '*')
 
             return redirect("/emailsent/%s" % email)
         else:
