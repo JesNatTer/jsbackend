@@ -196,11 +196,11 @@ def user_registration():
     if request.method == "POST":
 
         email = request.form['email']
-        first_name = request.json['first_name']
-        last_name = request.json['last_name']
-        address = request.json['address']
-        username = request.json['username']
-        password = request.json['password']
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        address = request.form['address']
+        username = request.form['username']
+        password = request.form['password']
         if (re.search(regex, email)):
             with sqlite3.connect("posbe.db") as conn:
                 cursor = conn.cursor()
