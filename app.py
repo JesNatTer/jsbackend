@@ -189,6 +189,7 @@ def protected():
 
 # app route for user registration
 @app.route('/user-registration/', methods=["POST"])
+@crossdomain(origin='*')
 def user_registration():
     response = {}
     regex = '^(\w|\.|\_|\-)+[@](\w|\_|\-|\.)+[.]\w{2,3}$'
