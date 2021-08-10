@@ -165,7 +165,7 @@ def identity(payload):
 
 # initializing the app
 app = Flask(__name__)
-CORS(app)
+# CORS(app)
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -175,7 +175,7 @@ app.config['MAIL_PASSWORD'] = 'MonkeyVillage123'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 app.config['TESTING'] = True
-app.config['CORS_HEADERS'] = 'Content-Type'
+# app.config['CORS_HEADERS'] = 'Content-Type'
 testthing = app.test_client()
 
 
@@ -190,6 +190,7 @@ def protected():
 
 # app route for user registration
 @app.route('/user-registration/', methods=["POST"])
+@cross_origin(origin='*')
 def user_registration():
     response = {}
     regex = '^(\w|\.|\_|\-)+[@](\w|\_|\-|\.)+[.]\w{2,3}$'
