@@ -2,7 +2,7 @@ import hmac
 import sqlite3
 from flask import Flask, request, redirect
 from flask_jwt import JWT, jwt_required, current_identity
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_mail import Mail, Message
 import re
 import cloudinary
@@ -254,6 +254,7 @@ def viewownprofile(username):
 # app route to add a product to the database
 @app.route('/addtocatalogue/', methods=["POST"])
 @jwt_required()
+@cross_origin('*')
 def newproduct():
     dtb = Database()
     response = {}
