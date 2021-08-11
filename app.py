@@ -54,15 +54,16 @@ class Database(object):
         proid = value
         query = "SELECT * FROM products WHERE product_id='" + proid + "'"
         self.cursor.execute(query)
-        return self.cursor.fetchall()
+        data = self.cursor.fetchall()
+        return data
 
     def viewcat(self):
-        self.cursor.execute("SELECT * FROM products WHERE product_quantity > 0")
+        self.cursor.execute("SELECT * FROM products")
         data = self.cursor.fetchall()
         return data
 
     def commit(self):
-        self.conn.commit()
+        return self.conn.commit()
 
 
 # function to take image uploads and convert them into urls
@@ -288,7 +289,7 @@ def get_products():
     response = {}
     items = dtb.viewcat()
     response['status_code'] = 200
-    response['data'] = items[0]
+    response['data'] = items
     return response
 
 
