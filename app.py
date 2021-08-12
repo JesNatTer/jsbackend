@@ -73,15 +73,12 @@ def upload_file():
                       api_secret='lTD-aqaoTbzVgmZqyZxjPThyaVg')
     upload_result = None
     if request.method == 'POST' or request.method == 'PUT':
-        if request.json['product_image'][0:4] == 'http':
-            return request.json['product_image']
-        else:
-            product_image = request.json['product_image']
-            app.logger.info('%s file_to_upload', product_image)
-            if product_image:
-                upload_result = cloudinary.uploader.upload(product_image)
-                app.logger.info(upload_result)
-                return upload_result['url']
+        product_image = request.json['product_image']
+        app.logger.info('%s file_to_upload', product_image)
+        if product_image:
+            upload_result = cloudinary.uploader.upload(product_image)
+            app.logger.info(upload_result)
+            return upload_result['url']
 
 
 db = Database()
