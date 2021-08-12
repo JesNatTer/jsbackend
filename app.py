@@ -166,7 +166,7 @@ def identity(payload):
 
 # initializing the app
 app = Flask(__name__)
-CORS(app, resources={r"/.*": {"origins": "*"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -176,7 +176,7 @@ app.config['MAIL_PASSWORD'] = 'MonkeyVillage123'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 app.config['TESTING'] = True
-app.config['CORS_HEADERS'] = 'Content-Type'
+app.config['CORS_HEADERS'] = ['Content-Type']
 
 
 jwt = JWT(app, authenticate, identity)
