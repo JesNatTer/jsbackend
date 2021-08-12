@@ -2,7 +2,7 @@ import hmac
 import sqlite3
 from flask import Flask, request, redirect
 from flask_jwt import JWT, jwt_required, current_identity
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from flask_mail import Mail, Message
 import re
 import cloudinary
@@ -73,12 +73,15 @@ def upload_file():
                       api_secret='lTD-aqaoTbzVgmZqyZxjPThyaVg')
     upload_result = None
     if request.method == 'POST' or request.method == 'PUT':
-        product_image = request.files['product_image']
-        app.logger.info('%s file_to_upload', product_image)
-        if product_image:
-            upload_result = cloudinary.uploader.upload(product_image)
-            app.logger.info(upload_result)
-            return upload_result['url']
+        if request.json['product_image'][0:4] == 'http':
+            return request.json['product_image']
+        else:
+            product_image = request.json['product_image']
+            app.logger.info('%s file_to_upload', product_image)
+            if product_image:
+                upload_result = cloudinary.uploader.upload(product_image)
+                app.logger.info(upload_result)
+                return upload_result['url']
 
 
 db = Database()
@@ -166,7 +169,7 @@ def identity(payload):
 
 # initializing the app
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -176,7 +179,7 @@ app.config['MAIL_PASSWORD'] = 'MonkeyVillage123'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 app.config['TESTING'] = True
-testthing = app.test_client()
+app.config['CORS_HEADERS'] = ['Content-Type']
 
 
 jwt = JWT(app, authenticate, identity)
@@ -259,11 +262,11 @@ def newproduct():
     response = {}
 
     if request.method == "POST":
-        product_id = request.form['product_id']
-        product_name = request.form['product_name']
-        product_type = request.form['product_type']
-        product_quantity = request.form['product_quantity']
-        product_price = request.form['product_price']
+        product_id = request.json['product_id']
+        product_name = request.json['product_name']
+        product_type = request.json['product_type']
+        product_quantity = request.json['product_quantity']
+        product_price = request.json['product_price']
         if (product_id == '' or product_name == '' or product_type == ''
                 or product_quantity == '' or product_price == ''):
             return "Please fill in all entry fields"
