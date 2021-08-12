@@ -260,11 +260,11 @@ def newproduct():
     response = {}
 
     if request.method == "POST":
-        product_id = request.form['product_id']
-        product_name = request.form['product_name']
-        product_type = request.form['product_type']
-        product_quantity = request.form['product_quantity']
-        product_price = request.form['product_price']
+        product_id = request.json['product_id']
+        product_name = request.json['product_name']
+        product_type = request.json['product_type']
+        product_quantity = request.json['product_quantity']
+        product_price = request.json['product_price']
         if (product_id == '' or product_name == '' or product_type == ''
                 or product_quantity == '' or product_price == ''):
             return "Please fill in all entry fields"
