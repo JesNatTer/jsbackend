@@ -176,8 +176,6 @@ app.config['MAIL_PASSWORD'] = 'MonkeyVillage123'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 app.config['TESTING'] = True
-app.config['CORS_HEADERS'] = 'Content-Type'
-testthing = app.test_client()
 
 
 jwt = JWT(app, authenticate, identity)
