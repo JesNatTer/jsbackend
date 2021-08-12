@@ -255,7 +255,6 @@ def viewownprofile(username):
 # app route to add a product to the database
 @app.route('/addtocatalogue/', methods=["POST"])
 @jwt_required()
-@cross_origin('*')
 def newproduct():
     dtb = Database()
     response = {}
