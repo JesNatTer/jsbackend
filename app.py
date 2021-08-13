@@ -2,7 +2,7 @@ import hmac
 import sqlite3
 from flask import Flask, request, redirect
 from flask_jwt import JWT, jwt_required, current_identity
-from flask_cors import CORS, cross_origin
+from flask_cors import CORS
 from flask_mail import Mail, Message
 import re
 import cloudinary
@@ -35,30 +35,29 @@ class Database(object):
         self.cursor = self.conn.cursor()
 
     def addpro(self, value):
-        query = "INSERT INTO products (product_id, product_name, product_type, product_quantity, product_price," \
-                "product_image) VALUES (?, ?, ?, ?, ?, ?)"
+        query = "INSERT INTO catalogue (product_id, product_name, product_type, product_quantity, product_price," \
+                "product_image, email) VALUES (?, ?, ?, ?, ?, ?, ?)"
         self.cursor.execute(query, value)
 
-    def delpro(self, value):
-        proid = value
-        query = "DELETE FROM products WHERE product_id='" + proid + "'"
+    def delpro(self):
+        query = "DELETE FROM catalogue WHERE product_quantity > 0"
         self.cursor.execute(query)
 
     def editpro(self, pro_id, value):
         proid = pro_id
         values = value
-        query = "UPDATE products SET product_id=?, product_name=?, product_type=?, product_quantity=?, product_price=?, product_image=? WHERE product_id='" + proid + "'"
+        query = "UPDATE catalogue SET product_id=?, product_name=?, product_type=?, product_quantity=?, product_price=?, product_image=? WHERE product_id='" + proid + "'"
         self.cursor.execute(query, values)
 
     def selectproduct(self, value):
         proid = value
-        query = "SELECT * FROM products WHERE product_id='" + proid + "'"
+        query = "SELECT * FROM catalogue WHERE product_id='" + proid + "'"
         self.cursor.execute(query)
         data = self.cursor.fetchall()
         return data
 
     def viewcat(self):
-        self.cursor.execute("SELECT * FROM products")
+        self.cursor.execute("SELECT * FROM catalogue")
         data = self.cursor.fetchall()
         return data
 
@@ -134,12 +133,14 @@ def createusertable():
 # function to create the products table in the database
 def createproducttable():
     with sqlite3.connect('posbe.db') as conn:
-        conn.execute("CREATE TABLE IF NOT EXISTS products (product_id TEXT PRIMARY KEY,"
+        conn.execute("CREATE TABLE IF NOT EXISTS catalogue (product_id TEXT PRIMARY KEY,"
                      "product_name TEXT NOT NULL,"
                      "product_type TEXT NOT NULL,"
                      "product_quantity INTEGER NOT NULL,"
                      "product_price TEXT NOT NULL,"
-                     "product_image TEXT NOT NULL)")
+                     "product_image TEXT NOT NULL,"
+                     "email TEXT NOT NULL,"
+                     "FOREIGN KEY (email) REFERENCES user (email))")
     print("product table created successfully.")
 
 
@@ -264,12 +265,13 @@ def newproduct():
         product_type = request.json['product_type']
         product_quantity = request.json['product_quantity']
         product_price = request.json['product_price']
+        email = request.json['email']
         if (product_id == '' or product_name == '' or product_type == ''
-                or product_quantity == '' or product_price == ''):
+                or product_quantity == '' or product_price == '' or email == ''):
             return "Please fill in all entry fields"
         else:
             if int(product_quantity):
-                values = (product_id, product_name, product_type, product_quantity, product_price, upload_file())
+                values = (product_id, product_name, product_type, product_quantity, product_price, upload_file(), email)
                 dtb.addpro(values)
                 dtb.commit()
 
@@ -294,19 +296,16 @@ def get_products():
 
 
 # app route to delete a product from the database
-@app.route("/delete-product/<productid>/")
+@app.route("/delete-product/")
 @jwt_required()
-def delete_product(productid):
+def delete_product():
     response = {}
     dtb = Database()
-    product = dtb.selectproduct(productid)
-    if product == []:
-        return "product does not exist"
-    else:
-        dtb.delpro(productid)
-        dtb.commit()
-        response['status_code'] = 200
-        response['message'] = "product deleted successfully."
+
+    dtb.delpro()
+    dtb.commit()
+    response['status_code'] = 200
+    response['message'] = "product deleted successfully."
     return response
 
 
