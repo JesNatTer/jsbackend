@@ -178,7 +178,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
-app.config['JWT_EXPIRATION_DELTA'] = datetime.timedelta(days=1)
+app.config['JWT_EXPIRATION_DELTA'] = datetime.timedelta(hours=24)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = 'lottoemail123@gmail.com'
