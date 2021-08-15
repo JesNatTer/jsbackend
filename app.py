@@ -53,7 +53,7 @@ class Database(object):
     def edituser(self, email, value):
         email = email
         values = value
-        query = "UPDATE user SET email=?, first_name=?, last_name=?, address=?, username=?, password=? WHERE email='" + email + "'"
+        query = "UPDATE user SET first_name=?, last_name=?, address=?, username=?, password=? WHERE email='" + email + "'"
         self.cursor.execute(query, values)
 
     def selectproduct(self, value):
@@ -367,13 +367,12 @@ def edit_product(useremail):
     response = {}
     dtb = Database()
     if request.method == "PUT":
-        email = request.json['email']
         first_name = request.json['first_name']
         last_name = request.json['last_name']
         address = request.json['address']
         username = request.json['username']
         password = request.json['password']
-        values = (email, first_name, last_name, address, username, password)
+        values = (first_name, last_name, address, username, password)
         dtb.edituser(useremail, values)
         dtb.commit()
         response['message'] = 200
