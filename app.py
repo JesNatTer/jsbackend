@@ -363,7 +363,7 @@ def getmyproducts(email):
 
 @app.route("/edit-user/<useremail>/", methods=["PUT"])
 @jwt_required()
-def edit_product(useremail):
+def edit_user(useremail):
     response = {}
     dtb = Database()
     if request.method == "PUT":
