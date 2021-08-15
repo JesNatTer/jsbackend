@@ -56,6 +56,13 @@ class Database(object):
         data = self.cursor.fetchall()
         return data
 
+    def myproducts(self, value):
+        email = value
+        query = "SELECT * FROM catalogue WHERE email='" + email + "'"
+        self.cursor.execute(query)
+        data = self.cursor.fetchall()
+        return data
+
     def viewcat(self):
         self.cursor.execute("SELECT * FROM catalogue")
         data = self.cursor.fetchall()
@@ -320,18 +327,30 @@ def edit_product(productid):
         return "Product does not exist in the database"
     else:
         if request.method == "PUT":
-            product_id = request.form['product_id']
-            product_name = request.form['product_name']
-            product_type = request.form['product_type']
-            product_quantity = request.form['product_quantity']
-            product_price = request.form['product_price']
-            values = (product_id, product_name, product_type, product_quantity, product_price, upload_file())
+            product_id = request.json['product_id']
+            product_name = request.json['product_name']
+            product_type = request.json['product_type']
+            product_quantity = request.json['product_quantity']
+            product_price = request.json['product_price']
+            email = request.json['email']
+            values = (product_id, product_name, product_type, product_quantity, product_price, upload_file(), email)
             dtb.editpro(productid, values)
             dtb.commit()
             response['message'] = 200
             return response
         else:
             return "Method not allowed"
+
+
+@app.route("/myproducts/<email>/")
+@jwt_required()
+def getmyproducts(email):
+    dtb = Database()
+    response = {}
+    items = dtb.myproducts(email)
+    response['status_code'] = 200
+    response['data'] = items
+    return response
 
 
 if __name__ == '__main__':
