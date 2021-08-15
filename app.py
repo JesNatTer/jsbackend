@@ -50,6 +50,12 @@ class Database(object):
         query = "UPDATE catalogue SET product_id=?, product_name=?, product_type=?, product_quantity=?, product_price=?, product_image=? WHERE product_id='" + proid + "'"
         self.cursor.execute(query, values)
 
+    def edituser(self, email, value):
+        email = email
+        values = value
+        query = "UPDATE user SET email=?, first_name=?, last_name=?, address=?, username=?, password=? WHERE email='" + email + "'"
+        self.cursor.execute(query, values)
+
     def selectproduct(self, value):
         proid = value
         query = "SELECT * FROM catalogue WHERE product_id='" + proid + "'"
@@ -353,6 +359,27 @@ def getmyproducts(email):
     response['status_code'] = 200
     response['data'] = items
     return response
+
+
+@app.route("/edit-user/<useremail>/", methods=["PUT"])
+@jwt_required()
+def edit_product(useremail):
+    response = {}
+    dtb = Database()
+    if request.method == "PUT":
+        email = request.json['email']
+        first_name = request.json['first_name']
+        last_name = request.json['last_name']
+        address = request.json['address']
+        username = request.json['username']
+        password = request.json['password']
+        values = (email, first_name, last_name, address, username, password)
+        dtb.edituser(useremail, values)
+        dtb.commit()
+        response['message'] = 200
+        return response
+    else:
+        return "Method not allowed"
 
 
 if __name__ == '__main__':
