@@ -47,8 +47,36 @@ class Database(object):
     def editpro(self, pro_id, value):
         proid = pro_id
         values = value
-        query = "UPDATE catalogue SET product_id=?, product_name=?, product_type=?, product_quantity=?, product_price=?, product_image=? WHERE product_id='" + proid + "'"
-        self.cursor.execute(query, values)
+        put_data = {}
+        if values.get['product_image']:
+            self.cursor.execute("UPDATE catalogue SET "
+                                "product_id=?, "
+                                "product_name=?, "
+                                "product_type=?, "
+                                "product_quantity=?, "
+                                "product_price=?, "
+                                "product_image=? "
+                                "WHERE product_id='" + proid + "'"
+                                ,   (put_data['product_id'],
+                                     put_data['product_name'],
+                                     put_data['product_type'],
+                                     put_data['product_quantity'],
+                                     put_data['product_price'],
+                                     put_data['product_image']))
+        else:
+            self.cursor.execute("UPDATE catalogue SET "
+                                "product_id=?, "
+                                "product_name=?, "
+                                "product_type=?, "
+                                "product_quantity=?, "
+                                "product_price=?, "
+                                "product_image=? "
+                                "WHERE product_id='" + proid + "'"
+                                , (put_data['product_id'],
+                                   put_data['product_name'],
+                                   put_data['product_type'],
+                                   put_data['product_quantity'],
+                                   put_data['product_price']))
 
     def edituser(self, email, value):
         email = email
@@ -335,6 +363,7 @@ def edit_product(productid):
         return "Product does not exist in the database"
     else:
         if request.method == "PUT":
+            incoming_data = dict(request.json)
             product_id = request.json['product_id']
             product_name = request.json['product_name']
             product_type = request.json['product_type']
@@ -379,6 +408,17 @@ def edit_user(useremail):
         return response
     else:
         return "Method not allowed"
+
+
+@app.route('/select_item/<productid>')
+@jwt_required
+def selectitem(productid):
+    response = {}
+    dtb = Database()
+    data = dtb.selectproduct(productid)
+    response['message'] = 200
+    response['data'] = data
+    return response
 
 
 if __name__ == '__main__':
