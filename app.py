@@ -7,8 +7,7 @@ from flask_mail import Mail, Message
 import re
 import cloudinary
 import cloudinary.uploader
-import datetime
-
+from datetime import timedelta
 
 # creating a user object
 class User(object):
@@ -218,7 +217,7 @@ def identity(payload):
 
 # initializing the app
 app = Flask(__name__)
-app.config['JWT_EXPIRATION_DELTA'] = datetime.timedelta(hours=24)
+app.config['JWT_EXPIRATION_DELTA'] = timedelta(hours=24)
 CORS(app, resources={r"/*": {"origins": "*"}})
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
