@@ -153,6 +153,7 @@ def fetch_products():
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM products")
         allproducts = cursor.fetchall()
+        print(allproducts)
 
         new_data = []
 
@@ -217,10 +218,10 @@ def identity(payload):
 
 # initializing the app
 app = Flask(__name__)
+app.config['JWT_EXPIRATION_DELTA'] = datetime.timedelta(hours=24)
 CORS(app, resources={r"/*": {"origins": "*"}})
 app.debug = True
 app.config['SECRET_KEY'] = 'super-secret'
-app.config['JWT_EXPIRATION_DELTA'] = datetime.timedelta(hours=24)
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = 'lottoemail123@gmail.com'
