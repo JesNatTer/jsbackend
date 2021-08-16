@@ -411,7 +411,7 @@ def edit_user(useremail):
 
 
 @app.route('/select_item/<productid>')
-@jwt_required
+@jwt_required()
 def selectitem(productid):
     response = {}
     dtb = Database()
