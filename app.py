@@ -40,8 +40,9 @@ class Database(object):
                 "product_image, email) VALUES (?, ?, ?, ?, ?, ?, ?)"
         self.cursor.execute(query, value)
 
-    def delpro(self):
-        query = "DELETE FROM catalogue WHERE product_quantity > 0"
+    def delpro(self, productid):
+        proid = productid
+        query = "DELETE FROM catalogue WHERE product_id='" + proid + "'"
         self.cursor.execute(query)
 
     def editpro(self, pro_id, value):
@@ -346,13 +347,13 @@ def get_products():
 
 
 # app route to delete a product from the database
-@app.route("/delete-product/")
+@app.route("/delete-product/<productid>")
 @jwt_required()
-def delete_product():
+def delete_product(productid):
     response = {}
     dtb = Database()
 
-    dtb.delpro()
+    dtb.delpro(productid)
     dtb.commit()
     response['status_code'] = 200
     response['message'] = "product deleted successfully."
