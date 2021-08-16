@@ -48,7 +48,7 @@ class Database(object):
         proid = pro_id
         values = value
         put_data = {}
-        if values.get['product_image']:
+        if values.get('product_image'):
             self.cursor.execute("UPDATE catalogue SET "
                                 "product_id=?, "
                                 "product_name=?, "
