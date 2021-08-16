@@ -364,14 +364,7 @@ def edit_product(productid):
     else:
         if request.method == "PUT":
             incoming_data = dict(request.json)
-            product_id = request.json['product_id']
-            product_name = request.json['product_name']
-            product_type = request.json['product_type']
-            product_quantity = request.json['product_quantity']
-            product_price = request.json['product_price']
-            email = request.json['email']
-            values = (product_id, product_name, product_type, product_quantity, product_price, upload_file(), email)
-            dtb.editpro(productid, values)
+            dtb.editpro(productid, incoming_data)
             dtb.commit()
             response['message'] = 200
             return response
