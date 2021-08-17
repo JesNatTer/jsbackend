@@ -76,8 +76,7 @@ class Database(object):
                                 "product_name=?, "
                                 "product_type=?, "
                                 "product_quantity=?, "
-                                "product_price=?, "
-                                "product_image=? "
+                                "product_price=? "
                                 "WHERE product_id='" + proid + "'"
                                 , (put_data['product_id'],
                                    put_data['product_name'],
@@ -432,6 +431,8 @@ def selectitem(productid):
 def deleteuser(email):
     response = {}
     dtb = Database()
+    dtb.delpro(email)
+    dtb.commit()
     dtb.deleteuser(email)
     response['message'] = 200
     response['text'] = "User successfully deleted"
