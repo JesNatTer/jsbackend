@@ -111,7 +111,7 @@ class Database(object):
         return data
 
     def deleteuser(self, email):
-        self.cursor.execute("DELETE FROM user WHERE username='" + email + "'")
+        self.cursor.execute("DELETE FROM user WHERE email='" + email + "'")
         self.conn.commit()
 
     def commit(self):
