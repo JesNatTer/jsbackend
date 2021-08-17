@@ -110,6 +110,10 @@ class Database(object):
         data = self.cursor.fetchall()
         return data
 
+    def deleteuser(self, email):
+        self.cursor.execute("DELETE FROM user WHERE email='" + email + "'")
+        self.conn.commit()
+
     def commit(self):
         return self.conn.commit()
 
@@ -138,6 +142,7 @@ def fetch_users():
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM user")
         users = cursor.fetchall()
+        print(users)
 
         new_data = []
 
@@ -421,6 +426,16 @@ def selectitem(productid):
     response['data'] = data
     return response
 
+
+@app.route('/deleteuser/<email>')
+@jwt_required()
+def deleteuser(email):
+    response = {}
+    dtb = Database()
+    dtb.deleteuser(email)
+    response['message'] = 200
+    response['text'] = "User successfully deleted"
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)
