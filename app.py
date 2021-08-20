@@ -269,6 +269,9 @@ def user_registration():
                                "username,"
                                "password) VALUES(?, ?, ?, ?, ?, ?)", (email, first_name, last_name, address, username, password))
                 conn.commit()
+                global users
+                users = fetch_users()
+
 
                 response["message"] = "success. message sent"
                 response["status_code"] = 201
